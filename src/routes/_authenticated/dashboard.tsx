@@ -101,7 +101,7 @@ function Dashboard() {
             {nextTask.description ? (
               <p className="mt-1 text-sm text-muted-foreground">{nextTask.description}</p>
             ) : null}
-            <Button className="mt-4" onClick={() => navigate({ to: "/onboarding" })}>
+            <Button className="mt-4" onClick={() => navigate({ to: "/plano" })}>
               Começar
             </Button>
           </>
