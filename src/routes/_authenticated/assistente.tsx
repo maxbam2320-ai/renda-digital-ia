@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Compass, Loader2, Plus, SendHorizonal } from "lucide-react";
+import { Compass, Loader2, Plus, SendHorizontal } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -24,7 +24,8 @@ const SUGGESTIONS = [
   "Como vender pelo WhatsApp?",
 ];
 
-type Msg = { id: string; role: string; content: string };\ntype Conversation = { id: string; title: string; updated_at: string };
+type Msg = { id: string; role: string; content: string };
+type Conversation = { id: string; title: string; updated_at: string };
 
 function AssistantPage() {
   const [convs, setConvs] = useState<Conversation[]>([]);
@@ -196,7 +197,7 @@ function AssistantPage() {
             }}
           />
           <Button type="submit" size="icon" aria-label="Enviar" disabled={busy || !input.trim()}>
-            <SendHorizonal className="size-4" />
+            <SendHorizontal className="size-4" />
           </Button>
         </form>
       </section>
