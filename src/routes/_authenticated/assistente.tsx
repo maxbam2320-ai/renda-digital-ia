@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { useServerFn } from "@tanstack/react-start";
 import { Compass, Loader2, Plus, SendHorizonal } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -31,7 +30,6 @@ type Msg = { id: string; role: string; content: string };
 
 function AssistantPage() {
   const invalidate = useInvalidate();
-  const reply = useServerFn(assistantReply);
   const [convId, setConvId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
@@ -40,14 +38,23 @@ function AssistantPage() {
 
   const { data: convs = [] } = useQuery({
     queryKey: ["ai_conversations"],
-    queryFn: async () => (await supabase.from("ai_conversations").select("id,title,updated_at").order("updated_at", { ascending: false }).limit(20)).data ?? [],
+    queryFn: async () =>
+      (await supabase
+        .from("ai_conversations")
+        .select("id,title,updated_at")
+        .order("updated_at", { ascending: false })
+        .limit(20)).data ?? [],
   });
 
   useEffect(() => endRef.current?.scrollIntoView({ behavior: "smooth" }), [messages, busy]);
 
   async function open(id: string) {
     setConvId(id);
-    const { data } = await supabase.from("ai_messages").select("id,role,content").eq("conversation_id", id).order("created_at");
+    const { data } = await supabase
+      .from("ai_messages")
+      .select("id,role,content")
+      .eq("conversation_id", id)
+      .order("created_at");
     setMessages(data ?? []);
   }
 
@@ -58,7 +65,7 @@ function AssistantPage() {
     setMessages((m) => [...m, { id: crypto.randomUUID(), role: "user", content: msg }]);
     setBusy(true);
     try {
-      const r = await reply({ data: { conversationId: convId, message: msg } });
+      const r = await assistantReply({ data: { conversationId: convId, message: msg } });
       setConvId(r.conversationId);
       setMessages((m) => [...m, { id: crypto.randomUUID(), role: "assistant", content: r.answer }]);
       invalidate(["ai_conversations"]);
