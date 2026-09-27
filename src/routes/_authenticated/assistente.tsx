@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { useServerFn } from "@tanstack/react-start";
 import { Compass, Loader2, Plus, SendHorizonal } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -31,7 +30,6 @@ type Msg = { id: string; role: string; content: string };
 
 function AssistantPage() {
   const invalidate = useInvalidate();
-  const reply = useServerFn(assistantReply);
   const [convId, setConvId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
