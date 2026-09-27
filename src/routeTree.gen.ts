@@ -12,10 +12,19 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as AuthenticatedAssistenteRouteImport } from './routes/_authenticated/assistente'
 import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
+import { Route as AuthenticatedConteudoRouteImport } from './routes/_authenticated/conteudo'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedMetasRouteImport } from './routes/_authenticated/metas'
+import { Route as AuthenticatedOfertaRouteImport } from './routes/_authenticated/oferta'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
+import { Route as AuthenticatedOportunidadesRouteImport } from './routes/_authenticated/oportunidades'
 import { Route as AuthenticatedPerfilRouteImport } from './routes/_authenticated/perfil'
+import { Route as AuthenticatedPlanoRouteImport } from './routes/_authenticated/plano'
+import { Route as AuthenticatedPrimeiraVendaRouteImport } from './routes/_authenticated/primeira-venda'
+import { Route as AuthenticatedTarefasRouteImport } from './routes/_authenticated/tarefas'
+import { Route as AuthenticatedVendasRouteImport } from './routes/_authenticated/vendas'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -31,15 +40,35 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAssistenteRoute = AuthenticatedAssistenteRouteImport.update({
+  id: '/assistente',
+  path: '/assistente',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedConfiguracoesRoute =
   AuthenticatedConfiguracoesRouteImport.update({
     id: '/configuracoes',
     path: '/configuracoes',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedConteudoRoute = AuthenticatedConteudoRouteImport.update({
+  id: '/conteudo',
+  path: '/conteudo',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedMetasRoute = AuthenticatedMetasRouteImport.update({
+  id: '/metas',
+  path: '/metas',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedOfertaRoute = AuthenticatedOfertaRouteImport.update({
+  id: '/oferta',
+  path: '/oferta',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
@@ -47,54 +76,145 @@ const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
   path: '/onboarding',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedOportunidadesRoute =
+  AuthenticatedOportunidadesRouteImport.update({
+    id: '/oportunidades',
+    path: '/oportunidades',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedPerfilRoute = AuthenticatedPerfilRouteImport.update({
   id: '/perfil',
   path: '/perfil',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedPlanoRoute = AuthenticatedPlanoRouteImport.update({
+  id: '/plano',
+  path: '/plano',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedPrimeiraVendaRoute =
+  AuthenticatedPrimeiraVendaRouteImport.update({
+    id: '/primeira-venda',
+    path: '/primeira-venda',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedTarefasRoute = AuthenticatedTarefasRouteImport.update({
+  id: '/tarefas',
+  path: '/tarefas',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedVendasRoute = AuthenticatedVendasRouteImport.update({
+  id: '/vendas',
+  path: '/vendas',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/assistente': typeof AuthenticatedAssistenteRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
+  '/conteudo': typeof AuthenticatedConteudoRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/metas': typeof AuthenticatedMetasRoute
+  '/oferta': typeof AuthenticatedOfertaRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
+  '/oportunidades': typeof AuthenticatedOportunidadesRoute
   '/perfil': typeof AuthenticatedPerfilRoute
+  '/plano': typeof AuthenticatedPlanoRoute
+  '/primeira-venda': typeof AuthenticatedPrimeiraVendaRoute
+  '/tarefas': typeof AuthenticatedTarefasRoute
+  '/vendas': typeof AuthenticatedVendasRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/assistente': typeof AuthenticatedAssistenteRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
+  '/conteudo': typeof AuthenticatedConteudoRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/metas': typeof AuthenticatedMetasRoute
+  '/oferta': typeof AuthenticatedOfertaRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
+  '/oportunidades': typeof AuthenticatedOportunidadesRoute
   '/perfil': typeof AuthenticatedPerfilRoute
+  '/plano': typeof AuthenticatedPlanoRoute
+  '/primeira-venda': typeof AuthenticatedPrimeiraVendaRoute
+  '/tarefas': typeof AuthenticatedTarefasRoute
+  '/vendas': typeof AuthenticatedVendasRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/login': typeof LoginRoute
+  '/_authenticated/assistente': typeof AuthenticatedAssistenteRoute
   '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
+  '/_authenticated/conteudo': typeof AuthenticatedConteudoRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/metas': typeof AuthenticatedMetasRoute
+  '/_authenticated/oferta': typeof AuthenticatedOfertaRoute
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
+  '/_authenticated/oportunidades': typeof AuthenticatedOportunidadesRoute
   '/_authenticated/perfil': typeof AuthenticatedPerfilRoute
+  '/_authenticated/plano': typeof AuthenticatedPlanoRoute
+  '/_authenticated/primeira-venda': typeof AuthenticatedPrimeiraVendaRoute
+  '/_authenticated/tarefas': typeof AuthenticatedTarefasRoute
+  '/_authenticated/vendas': typeof AuthenticatedVendasRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/login' | '/configuracoes' | '/dashboard' | '/onboarding' | '/perfil'
+    | '/'
+    | '/login'
+    | '/assistente'
+    | '/configuracoes'
+    | '/conteudo'
+    | '/dashboard'
+    | '/metas'
+    | '/oferta'
+    | '/onboarding'
+    | '/oportunidades'
+    | '/perfil'
+    | '/plano'
+    | '/primeira-venda'
+    | '/tarefas'
+    | '/vendas'
   fileRoutesByTo: FileRoutesByTo
   to:
-    '/' | '/login' | '/configuracoes' | '/dashboard' | '/onboarding' | '/perfil'
+    | '/'
+    | '/login'
+    | '/assistente'
+    | '/configuracoes'
+    | '/conteudo'
+    | '/dashboard'
+    | '/metas'
+    | '/oferta'
+    | '/onboarding'
+    | '/oportunidades'
+    | '/perfil'
+    | '/plano'
+    | '/primeira-venda'
+    | '/tarefas'
+    | '/vendas'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/login'
+    | '/_authenticated/assistente'
     | '/_authenticated/configuracoes'
+    | '/_authenticated/conteudo'
     | '/_authenticated/dashboard'
+    | '/_authenticated/metas'
+    | '/_authenticated/oferta'
     | '/_authenticated/onboarding'
+    | '/_authenticated/oportunidades'
     | '/_authenticated/perfil'
+    | '/_authenticated/plano'
+    | '/_authenticated/primeira-venda'
+    | '/_authenticated/tarefas'
+    | '/_authenticated/vendas'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -126,11 +246,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/assistente': {
+      id: '/_authenticated/assistente'
+      path: '/assistente'
+      fullPath: '/assistente'
+      preLoaderRoute: typeof AuthenticatedAssistenteRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/configuracoes': {
       id: '/_authenticated/configuracoes'
       path: '/configuracoes'
       fullPath: '/configuracoes'
       preLoaderRoute: typeof AuthenticatedConfiguracoesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/conteudo': {
+      id: '/_authenticated/conteudo'
+      path: '/conteudo'
+      fullPath: '/conteudo'
+      preLoaderRoute: typeof AuthenticatedConteudoRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/dashboard': {
@@ -140,11 +274,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/metas': {
+      id: '/_authenticated/metas'
+      path: '/metas'
+      fullPath: '/metas'
+      preLoaderRoute: typeof AuthenticatedMetasRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/oferta': {
+      id: '/_authenticated/oferta'
+      path: '/oferta'
+      fullPath: '/oferta'
+      preLoaderRoute: typeof AuthenticatedOfertaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/onboarding': {
       id: '/_authenticated/onboarding'
       path: '/onboarding'
       fullPath: '/onboarding'
       preLoaderRoute: typeof AuthenticatedOnboardingRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/oportunidades': {
+      id: '/_authenticated/oportunidades'
+      path: '/oportunidades'
+      fullPath: '/oportunidades'
+      preLoaderRoute: typeof AuthenticatedOportunidadesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/perfil': {
@@ -154,21 +309,67 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPerfilRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/plano': {
+      id: '/_authenticated/plano'
+      path: '/plano'
+      fullPath: '/plano'
+      preLoaderRoute: typeof AuthenticatedPlanoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/primeira-venda': {
+      id: '/_authenticated/primeira-venda'
+      path: '/primeira-venda'
+      fullPath: '/primeira-venda'
+      preLoaderRoute: typeof AuthenticatedPrimeiraVendaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/tarefas': {
+      id: '/_authenticated/tarefas'
+      path: '/tarefas'
+      fullPath: '/tarefas'
+      preLoaderRoute: typeof AuthenticatedTarefasRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/vendas': {
+      id: '/_authenticated/vendas'
+      path: '/vendas'
+      fullPath: '/vendas'
+      preLoaderRoute: typeof AuthenticatedVendasRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAssistenteRoute: typeof AuthenticatedAssistenteRoute
   AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
+  AuthenticatedConteudoRoute: typeof AuthenticatedConteudoRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedMetasRoute: typeof AuthenticatedMetasRoute
+  AuthenticatedOfertaRoute: typeof AuthenticatedOfertaRoute
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
+  AuthenticatedOportunidadesRoute: typeof AuthenticatedOportunidadesRoute
   AuthenticatedPerfilRoute: typeof AuthenticatedPerfilRoute
+  AuthenticatedPlanoRoute: typeof AuthenticatedPlanoRoute
+  AuthenticatedPrimeiraVendaRoute: typeof AuthenticatedPrimeiraVendaRoute
+  AuthenticatedTarefasRoute: typeof AuthenticatedTarefasRoute
+  AuthenticatedVendasRoute: typeof AuthenticatedVendasRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAssistenteRoute: AuthenticatedAssistenteRoute,
   AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRoute,
+  AuthenticatedConteudoRoute: AuthenticatedConteudoRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedMetasRoute: AuthenticatedMetasRoute,
+  AuthenticatedOfertaRoute: AuthenticatedOfertaRoute,
   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
+  AuthenticatedOportunidadesRoute: AuthenticatedOportunidadesRoute,
   AuthenticatedPerfilRoute: AuthenticatedPerfilRoute,
+  AuthenticatedPlanoRoute: AuthenticatedPlanoRoute,
+  AuthenticatedPrimeiraVendaRoute: AuthenticatedPrimeiraVendaRoute,
+  AuthenticatedTarefasRoute: AuthenticatedTarefasRoute,
+  AuthenticatedVendasRoute: AuthenticatedVendasRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
