@@ -8,3 +8,6 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Home-screen installability uses a manifest and uploaded-image-derived icons only, without an app-shell service worker, because offline use was not requested.
+- The root route renders client-side to keep auth-gated redirects consistent with the first browser render and avoid hydration failures on direct protected-page visits.
