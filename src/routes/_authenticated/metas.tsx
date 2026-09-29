@@ -70,7 +70,7 @@ function GoalsPage() {
             const isMoney = g.goal_type === "renda";
             const cur = Number(g.current);
             const tgt = Number(g.target);
-            const step = isMoney ? 50 : 1;
+            const step = 1;
             return (
               <div key={g.id} className="panel space-y-3 p-5">
                 <div className="flex items-start justify-between">
@@ -82,15 +82,30 @@ function GoalsPage() {
                 </p>
                 <Bar pct={tgt ? (cur / tgt) * 100 : 0} />
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="icon" aria-label="Diminuir" onClick={() => change(g, cur - step)}><Minus className="size-4" /></Button>
+                  <Button variant="outline" size="icon" aria-label="Diminuir 1" onClick={() => change(g, cur - step)}><Minus className="size-4" /></Button>
                   <Input
                     type="number"
+                    min={1}
+                    step={1}
                     className="text-center"
-                    defaultValue={cur}
-                    key={cur}
-                    onBlur={(e) => Number(e.target.value) !== cur && change(g, Number(e.target.value))}
+                    placeholder="Ex.: 10"
+                    aria-label={isMoney ? "Valor ganho para adicionar" : "Quantidade para adicionar"}
+                    data-goal-add-input={g.id}
                   />
-                  <Button variant="outline" size="icon" aria-label="Aumentar" onClick={() => change(g, cur + step)}><Plus className="size-4" /></Button>
+                  <Button
+                    type="button"
+                    className="gap-1"
+                    aria-label="Adicionar progresso"
+                    onClick={() => {
+                      const el = document.querySelector<HTMLInputElement>(`[data-goal-add-input="${g.id}"]`);
+                      const amount = el ? Number(el.value) : 0;
+                      if (!amount || amount <= 0) return;
+                      change(g, cur + amount);
+                      if (el) el.value = "";
+                    }}
+                  >
+                    <Plus className="size-4" /> Adicionar
+                  </Button>
                 </div>
               </div>
             );
@@ -103,7 +118,7 @@ function GoalsPage() {
             {Object.entries(TYPES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </select>
         </Field>
-        <Field label="Meta"><Input type="number" min={1} value={target} onChange={(e) => setTarget(e.target.value)} required /></Field>
+        <Field label="Meta"><Input type="number" min={1} step={1} value={target} onChange={(e) => setTarget(e.target.value)} placeholder="Ex.: 10000" required /></Field>
         <Button type="submit">Criar meta</Button>
       </form>
     </div>
