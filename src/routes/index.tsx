@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/")({
-  ssr: false,
   head: () => ({
     meta: [
       { title: "Renda Digital IA — sua direção para criar renda extra online" },
