@@ -33,6 +33,15 @@ const ACCEPTED_FILES = "image/png,image/jpeg,image/webp,application/pdf,.doc,.do
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const MAX_FILES = 5;
 
+async function fileToDataUrl(file: File): Promise<string> {
+  return await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => typeof reader.result === "string" ? resolve(reader.result) : reject(new Error("Não foi possível ler o arquivo."));
+    reader.onerror = () => reject(new Error("Não foi possível ler o arquivo."));
+    reader.readAsDataURL(file);
+  });
+}
+
 function AssistantPage() {
   const invalidate = useInvalidate();
   const [convId, setConvId] = useState<string | null>(null);
@@ -107,17 +116,40 @@ function AssistantPage() {
 
   async function send(text: string) {
     const msg = text.trim();
-    if ((!msg && attachments.length === 0) || busy) return;
-    const attachmentNames = attachments.map(({ file }) => file.name);
-    const displayMessage = [msg, attachmentNames.length ? `\n\nArquivos selecionados: ${attachmentNames.join(", ")}` : ""].join("");
-    clearAttachments();
+    const selectedFiles = [...attachments];
+    if ((!msg && selectedFiles.length === 0) || busy) return;
+    const totalSize = selectedFiles.reduce((sum, item) => sum + item.file.size, 0);
+    if (totalSize > 15 * 1024 * 1024) {
+      toast.error("O tamanho total dos anexos deve ser de até 15 MB por mensagem.");
+      return;
+    }
+
     setInput("");
-    setMessages((m) => [...m, { id: crypto.randomUUID(), role: "user", content: displayMessage }]);
     setBusy(true);
     try {
-      const r = await assistantReply({ data: { conversationId: convId, message: displayMessage } });
+      const filesForAi = await Promise.all(selectedFiles.map(async ({ file }) => ({
+        name: file.name,
+        mimeType: file.type || (
+          /\.pdf$/i.test(file.name) ? "application/pdf" :
+          /\.docx$/i.test(file.name) ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document" :
+          /\.doc$/i.test(file.name) ? "application/msword" :
+          /\.txt$/i.test(file.name) ? "text/plain" : "application/octet-stream"
+        ),
+        dataUrl: await fileToDataUrl(file),
+      })));
+      const attachmentNames = selectedFiles.map(({ file }) => file.name);
+      const displayMessage = [msg, attachmentNames.length ? `\\n\\nArquivos enviados: ${attachmentNames.join(", ")}` : ""].join("");
+      setMessages((m) => [...m, { id: crypto.randomUUID(), role: "user", content: displayMessage }]);
+      const r = await assistantReply({
+        data: {
+          conversationId: convId,
+          message: msg || "Analise os arquivos anexados e me explique o conteúdo.",
+          attachments: filesForAi,
+        },
+      });
       setConvId(r.conversationId);
       setMessages((m) => [...m, { id: crypto.randomUUID(), role: "assistant", content: r.answer }]);
+      clearAttachments();
       invalidate(["ai_conversations"]);
     } catch (e) {
       toast.error(errorMessage(e));
