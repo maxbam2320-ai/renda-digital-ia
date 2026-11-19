@@ -1,6 +1,7 @@
 const GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/responses";
 const MODEL = "openai/gpt-6-astra";
 
+export type AiAttachment = { name: string; mimeType: string; dataUrl: string };
 export type AiError = { status: number; message: string };
 
 function friendly(status: number): string {
@@ -11,9 +12,18 @@ function friendly(status: number): string {
 }
 
 /** Calls the Lovable AI Gateway (Responses API) and returns the full text. */
-export async function aiText(system: string, prompt: string): Promise<string> {
+export async function aiText(system: string, prompt: string, attachments: AiAttachment[] = []): Promise<string> {
   const apiKey = process.env["LOVABLE_API_KEY"];
   if (!apiKey) throw new Error("Não conseguimos concluir esta ação. Tente novamente.");
+
+  const userContent: Array<Record<string, unknown>> = [{ type: "input_text", text: prompt }];
+  for (const file of attachments) {
+    if (file.mimeType.startsWith("image/")) {
+      userContent.push({ type: "input_image", image_url: file.dataUrl, detail: "auto" });
+    } else {
+      userContent.push({ type: "input_file", filename: file.name, file_data: file.dataUrl });
+    }
+  }
 
   const response = await fetch(GATEWAY_URL, {
     method: "POST",
@@ -30,7 +40,7 @@ export async function aiText(system: string, prompt: string): Promise<string> {
       reasoning: { effort: "low" },
       input: [
         { role: "system", content: system },
-        { role: "user", content: prompt },
+        { role: "user", content: attachments.length ? userContent : prompt },
       ],
     }),
   });
