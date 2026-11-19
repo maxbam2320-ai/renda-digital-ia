@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Check, Clipboard, Compass, Loader2, Plus, RefreshCw, SendHorizontal, Sparkles, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Check, Clipboard, Compass, FileText, Image as ImageIcon, Loader2, Paperclip, Plus, RefreshCw, SendHorizontal, Sparkles, Trash2, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { errorMessage } from "@/components/ai-ui";
@@ -28,6 +28,30 @@ const SUGGESTIONS = [
 
 type Msg = { id: string; role: string; content: string };
 type Conversation = { id: string; title: string; updated_at: string };
+type Attachment = { id: string; file: File; previewUrl?: string };
+const ACCEPTED_FILES = "image/png,image/jpeg,image/webp,application/pdf,.doc,.docx,.txt";
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const MAX_FILES = 5;
+
+function attachmentMimeType(file: File): string {
+  const extension = file.name.split(".").pop()?.toLowerCase();
+  const types: Record<string, string> = {
+    png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", webp: "image/webp",
+    pdf: "application/pdf", doc: "application/msword",
+    docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    txt: "text/plain",
+  };
+  return types[extension ?? ""] ?? file.type;
+}
+
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => typeof reader.result === "string" ? resolve(reader.result) : reject(new Error("Não foi possível ler o arquivo."));
+    reader.onerror = () => reject(new Error("Não foi possível ler o arquivo."));
+    reader.readAsDataURL(file);
+  });
+}
 
 function AssistantPage() {
   const [convs, setConvs] = useState<Conversation[]>([]);
@@ -36,6 +60,46 @@ function AssistantPage() {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const attachmentsRef = useRef<Attachment[]>([]);
+  useEffect(() => { attachmentsRef.current = attachments; }, [attachments]);
+  useEffect(() => () => {
+    attachmentsRef.current.forEach((item) => { if (item.previewUrl) URL.revokeObjectURL(item.previewUrl); });
+  }, []);
+
+  function clearAttachments() {
+    setAttachments((current) => {
+      current.forEach((item) => { if (item.previewUrl) URL.revokeObjectURL(item.previewUrl); });
+      return [];
+    });
+  }
+
+  function addFiles(fileList: FileList | null) {
+    if (!fileList) return;
+    const incoming = Array.from(fileList);
+    const remaining = MAX_FILES - attachments.length;
+    if (incoming.length > remaining) toast.info("Você pode anexar até 5 arquivos por mensagem.");
+    const valid: Attachment[] = [];
+    for (const file of incoming.slice(0, remaining)) {
+      const mimeType = attachmentMimeType(file);
+      if (file.size > MAX_FILE_SIZE) { toast.error(`${file.name}: o limite é 10 MB por arquivo.`); continue; }
+      if (!["image/png", "image/jpeg", "image/webp", "application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "text/plain"].includes(mimeType)) {
+        toast.error(`${file.name}: formato não permitido.`); continue;
+      }
+      valid.push({ id: crypto.randomUUID(), file, previewUrl: mimeType.startsWith("image/") ? URL.createObjectURL(file) : undefined });
+    }
+    setAttachments((current) => [...current, ...valid]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  function removeAttachment(id: string) {
+    setAttachments((current) => {
+      const removed = current.find((item) => item.id === id);
+      if (removed?.previewUrl) URL.revokeObjectURL(removed.previewUrl);
+      return current.filter((item) => item.id !== id);
+    });
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -59,6 +123,7 @@ function AssistantPage() {
 
   async function open(id: string) {
     setConvId(id);
+    clearAttachments();
     const { data } = await supabase
       .from("ai_messages")
       .select("id,role,content")
@@ -71,6 +136,7 @@ function AssistantPage() {
     setConvId(null);
     setMessages([]);
     setInput("");
+    clearAttachments();
   }
 
   async function copyMessage(id: string, content: string) {
@@ -95,18 +161,26 @@ function AssistantPage() {
 
   async function send(text: string) {
     const msg = text.trim();
-    if (!msg || busy) return;
-
+    const selectedFiles = [...attachments];
+    if ((!msg && selectedFiles.length === 0) || busy) return;
+    const totalSize = selectedFiles.reduce((sum, item) => sum + item.file.size, 0);
+    if (totalSize > 50 * 1024 * 1024) { toast.error("O tamanho total dos anexos deve ser de até 50 MB por mensagem."); return; }
     setInput("");
-    setMessages((current) => [
-      ...current,
-      { id: crypto.randomUUID(), role: "user", content: msg },
-    ]);
+    setMessages((current) => [...current, {
+      id: crypto.randomUUID(), role: "user",
+      content: [msg, selectedFiles.length ? `\n\nArquivos enviados: ${selectedFiles.map(({ file }) => file.name).join(", ")}` : ""].join(""),
+    }]);
     setBusy(true);
-
     try {
+      const filesForAi = await Promise.all(selectedFiles.map(async ({ file }) => ({
+        name: file.name, mimeType: attachmentMimeType(file), dataUrl: await fileToDataUrl(file),
+      })));
       const result = await assistantReply({
-        data: { conversationId: convId, message: msg },
+        data: {
+          conversationId: convId,
+          message: msg || "Analise os arquivos anexados e explique seu conteúdo.",
+          attachments: filesForAi,
+        },
       });
 
       setConvId(result.conversationId);
@@ -115,6 +189,7 @@ function AssistantPage() {
         { id: crypto.randomUUID(), role: "assistant", content: result.answer },
       ]);
 
+      clearAttachments();
       setConvs((current) => {
         const existing = current.find((item) => item.id === result.conversationId);
         if (existing) {
@@ -237,12 +312,28 @@ function AssistantPage() {
           ) : null}
         </div>
         <form
-          className="sticky bottom-0 flex items-end gap-2 border-t border-border bg-background px-4 py-4"
-          onSubmit={(event) => {
-            event.preventDefault();
-            void send(input);
-          }}
+          className="sticky bottom-0 border-t border-border bg-background"
+          onSubmit={(event) => { event.preventDefault(); void send(input); }}
         >
+          {attachments.length > 0 ? (
+            <div className="flex items-center gap-2 overflow-x-auto px-4 pt-3">
+              {attachments.map(({ id, file, previewUrl }) => (
+                <div key={id} className="group relative size-20 shrink-0 overflow-hidden rounded-xl border border-border bg-secondary/50">
+                  {previewUrl ? <img src={previewUrl} alt={file.name} className="size-full object-cover" /> : (
+                    <div className="flex size-full flex-col items-center justify-center gap-1 p-2 text-center">
+                      {attachmentMimeType(file).startsWith("image/") ? <ImageIcon className="size-6 text-muted-foreground" /> : <FileText className="size-6 text-muted-foreground" />}
+                      <span className="w-full truncate text-[10px] text-muted-foreground">{file.name}</span>
+                    </div>
+                  )}
+                  <button type="button" onClick={() => removeAttachment(id)} aria-label={`Remover ${file.name}`} className="absolute right-1 top-1 grid size-5 place-items-center rounded-full bg-black/80 text-white hover:bg-black"><X className="size-3" /></button>
+                </div>
+              ))}
+              {attachments.length < MAX_FILES ? <button type="button" onClick={() => fileInputRef.current?.click()} aria-label="Adicionar mais arquivos" className="grid size-20 shrink-0 place-items-center rounded-xl border border-dashed border-muted-foreground/50 text-muted-foreground hover:border-primary hover:text-foreground"><Plus className="size-7" /></button> : null}
+            </div>
+          ) : null}
+          <input ref={fileInputRef} type="file" accept={ACCEPTED_FILES} multiple className="hidden" onChange={(event) => addFiles(event.target.files)} aria-label="Selecionar imagens e documentos" />
+          <div className="flex items-end gap-2 px-4 pb-3 pt-2">
+            <Button type="button" variant="ghost" size="icon" aria-label="Anexar arquivos" title="Anexar arquivos" disabled={busy || attachments.length >= MAX_FILES} onClick={() => fileInputRef.current?.click()}><Paperclip className="size-5" /></Button>
           <Textarea
             value={input}
             rows={2}
@@ -256,9 +347,11 @@ function AssistantPage() {
               }
             }}
           />
-          <Button type="submit" size="icon" aria-label="Enviar" disabled={busy || !input.trim()}>
+          <Button type="submit" size="icon" aria-label="Enviar" disabled={busy || (!input.trim() && attachments.length === 0)}>
             <SendHorizontal className="size-4" />
           </Button>
+          </div>
+          <p className="px-4 pb-3 text-xs text-muted-foreground">PNG, JPG, WEBP, PDF, DOC, DOCX e TXT · até 5 arquivos de 10 MB cada</p>
         </form>
       </section>
     </div>
