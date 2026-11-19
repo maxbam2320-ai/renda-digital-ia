@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Json } from "@/integrations/supabase/types";
-import { aiJson, aiText, BASE_RULES } from "./ai.server";
+import { aiJson, aiText, BASE_RULES, type AiAttachment } from "./ai.server";
 
 type Sb = { from: (t: string) => any };
 
@@ -201,21 +201,45 @@ JSON: {"steps": [{"phase": string, "goal": string, "message": string (mensagem p
 export const assistantReply = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({ conversationId: z.string().uuid().nullable(), message: z.string().min(1).max(4000) }).parse(d),
+    z.object({
+      conversationId: z.string().uuid().nullable(),
+      message: z.string().max(4000),
+      attachments: z.array(z.object({
+        name: z.string().max(255),
+        mimeType: z.string().max(100),
+        dataUrl: z.string().max(14_000_000),
+      })).max(5).optional().default([]),
+    }).refine((value) => value.message.trim().length > 0 || value.attachments.length > 0, "Escreva uma mensagem ou anexe um arquivo.").parse(d),
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context as unknown as { supabase: Sb; userId: string };
+    const allowedMimeTypes = new Set([
+      "image/png", "image/jpeg", "image/webp", "application/pdf", "text/plain",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/msword",
+    ]);
+    const totalBytes = data.attachments.reduce((sum, file) => sum + Math.floor(file.dataUrl.length * 0.75), 0);
+    if (totalBytes > 15 * 1024 * 1024 || data.attachments.some((file) =>
+      !allowedMimeTypes.has(file.mimeType) || !file.dataUrl.startsWith(`data:${file.mimeType};base64,`)
+    )) {
+      throw new Error("Anexo inválido ou muito grande. Confira os formatos e tente novamente.");
+    }
+
     let conversationId = data.conversationId;
     if (!conversationId) {
+      const title = (data.message || data.attachments.map((file) => file.name).join(", ")).slice(0, 60);
       const { data: conv, error } = await supabase
         .from("ai_conversations")
-        .insert({ user_id: userId, title: data.message.slice(0, 60) })
+        .insert({ user_id: userId, title })
         .select("id")
         .single();
       if (error) throw new Error("Não conseguimos concluir esta ação. Tente novamente.");
       conversationId = conv.id as string;
     }
-    await supabase.from("ai_messages").insert({ conversation_id: conversationId, user_id: userId, role: "user", content: data.message });
+    const attachmentNote = data.attachments.length
+      ? `\\n\\nArquivos enviados para análise: ${data.attachments.map((file) => file.name).join(", ")}`
+      : "";
+    const userMessage = `${data.message}${attachmentNote}`;
+    await supabase.from("ai_messages").insert({ conversation_id: conversationId, user_id: userId, role: "user", content: userMessage });
     const { data: history } = await supabase
       .from("ai_messages")
       .select("role, content")
@@ -225,10 +249,11 @@ export const assistantReply = createServerFn({ method: "POST" })
     const ctx = await profileContext(supabase);
     const transcript = (history ?? [])
       .map((m: { role: string; content: string }) => `${m.role === "user" ? "Pessoa" : "Assistente"}: ${m.content}`)
-      .join("\n\n");
+      .join("\\n\\n");
     const answer = await aiText(
-      `${BASE_RULES}\nVocê é o "Assistente Renda IA". Responda de forma direta, em até 250 palavras, com passos práticos quando fizer sentido.\n\n${ctx}`,
-      `Conversa até agora:\n${transcript}\n\nResponda à última mensagem da pessoa.`,
+      `${BASE_RULES}\\nVocê é o "Assistente Renda IA". Responda de forma direta, em até 250 palavras, com passos práticos quando fizer sentido. Analise os anexos enviados: descreva imagens e leia documentos para responder. Se algum arquivo não puder ser lido, informe isso claramente.\\n\\n${ctx}`,
+      `Conversa até agora:\\n${transcript}\\n\\nResponda à última mensagem da pessoa. Considere o conteúdo dos arquivos anexados nesta mensagem.`,
+      data.attachments as AiAttachment[],
     );
     await supabase.from("ai_messages").insert({ conversation_id: conversationId, user_id: userId, role: "assistant", content: answer });
     await supabase.from("ai_conversations").update({ updated_at: new Date().toISOString() }).eq("id", conversationId);
