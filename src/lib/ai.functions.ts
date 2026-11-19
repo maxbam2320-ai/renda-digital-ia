@@ -250,7 +250,7 @@ export const assistantReply = createServerFn({ method: "POST" })
       conversationId = conv.id as string;
     }
     const attachmentNote = data.attachments.length
-      ? `\\n\\nArquivos enviados para análise: ${data.attachments.map((file) => file.name).join(", ")}`
+      ? `\n\nArquivos enviados para análise: ${data.attachments.map((file) => file.name).join(", ")}`
       : "";
     const userMessage = `${data.message}${attachmentNote}`;
     const { error: userInsertError } = await supabase.from("ai_messages").insert({
