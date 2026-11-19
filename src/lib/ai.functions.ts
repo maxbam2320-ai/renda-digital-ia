@@ -225,37 +225,63 @@ export const assistantReply = createServerFn({ method: "POST" })
     }
 
     let conversationId = data.conversationId;
-    if (!conversationId) {
+    if (conversationId) {
+      const { data: ownedConversation, error: ownershipError } = await supabase
+        .from("ai_conversations")
+        .select("id")
+        .eq("id", conversationId)
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (ownershipError || !ownedConversation) {
+        throw new Error("Esta conversa não foi encontrada ou você não tem permissão para acessá-la.");
+      }
+    } else {
       const title = (data.message || data.attachments.map((file) => file.name).join(", ")).slice(0, 60);
       const { data: conv, error } = await supabase
         .from("ai_conversations")
         .insert({ user_id: userId, title })
         .select("id")
         .single();
-      if (error) throw new Error("Não conseguimos concluir esta ação. Tente novamente.");
+      if (error || !conv) throw new Error("Não conseguimos iniciar esta conversa. Tente novamente.");
       conversationId = conv.id as string;
     }
+
     const attachmentNote = data.attachments.length
-      ? `\\n\\nArquivos enviados para análise: ${data.attachments.map((file) => file.name).join(", ")}`
+      ? `\n\nArquivos enviados para análise: ${data.attachments.map((file) => file.name).join(", ")}`
       : "";
     const userMessage = `${data.message}${attachmentNote}`;
-    await supabase.from("ai_messages").insert({ conversation_id: conversationId, user_id: userId, role: "user", content: userMessage });
-    const { data: history } = await supabase
+    const { error: insertUserError } = await supabase.from("ai_messages").insert({
+      conversation_id: conversationId,
+      user_id: userId,
+      role: "user",
+      content: userMessage,
+    });
+    if (insertUserError) throw new Error("Não foi possível salvar sua mensagem. Tente novamente.");
+
+    const { data: history, error: historyError } = await supabase
       .from("ai_messages")
       .select("role, content")
       .eq("conversation_id", conversationId)
       .order("created_at", { ascending: true })
       .limit(30);
+    if (historyError) throw new Error("Não foi possível recuperar o histórico desta conversa.");
+
     const ctx = await profileContext(supabase);
     const transcript = (history ?? [])
       .map((m: { role: string; content: string }) => `${m.role === "user" ? "Pessoa" : "Assistente"}: ${m.content}`)
-      .join("\\n\\n");
+      .join("\n\n");
     const answer = await aiText(
-      `${BASE_RULES}\\nVocê é o "Assistente Renda IA". Responda de forma direta, em até 250 palavras, com passos práticos quando fizer sentido. Analise os anexos enviados: descreva imagens e leia documentos para responder. Se algum arquivo não puder ser lido, informe isso claramente.\\n\\n${ctx}`,
-      `Conversa até agora:\\n${transcript}\\n\\nResponda à última mensagem da pessoa. Considere o conteúdo dos arquivos anexados nesta mensagem.`,
+      `${BASE_RULES}\nVocê é o "Assistente Renda IA". Responda de forma direta, em até 250 palavras, com passos práticos quando fizer sentido. Analise as imagens anexadas visualmente e use o conteúdo dos documentos anexados para responder. Se algum arquivo não puder ser interpretado pelo modelo, informe isso claramente em vez de inventar seu conteúdo.\n\n${ctx}`,
+      `Conversa até agora:\n${transcript}\n\nResponda à última mensagem da pessoa usando também os arquivos anexados nesta solicitação.`,
       data.attachments as AiAttachment[],
     );
-    await supabase.from("ai_messages").insert({ conversation_id: conversationId, user_id: userId, role: "assistant", content: answer });
-    await supabase.from("ai_conversations").update({ updated_at: new Date().toISOString() }).eq("id", conversationId);
+    const { error: insertAssistantError } = await supabase.from("ai_messages").insert({
+      conversation_id: conversationId,
+      user_id: userId,
+      role: "assistant",
+      content: answer,
+    });
+    if (insertAssistantError) throw new Error("A resposta foi gerada, mas não pôde ser salva no histórico.");
+    await supabase.from("ai_conversations").update({ updated_at: new Date().toISOString() }).eq("id", conversationId).eq("user_id", userId);
     return { conversationId, answer };
   });
