@@ -59,11 +59,16 @@ function AssistantPage() {
 
   useEffect(() => endRef.current?.scrollIntoView({ behavior: "smooth" }), [messages, busy]);
 
+  const attachmentsRef = useRef<Attachment[]>([]);
+  useEffect(() => {
+    attachmentsRef.current = attachments;
+  }, [attachments]);
+
   useEffect(() => () => {
-    attachments.forEach((item) => {
+    attachmentsRef.current.forEach((item) => {
       if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
     });
-  }, [attachments]);
+  }, []);
 
   function clearAttachments() {
     setAttachments((current) => {
@@ -92,8 +97,10 @@ function AssistantPage() {
         toast.error(`${file.name}: o limite é 10 MB por arquivo.`);
         continue;
       }
-      if (!file.type.startsWith("image/") && !["application/pdf", "text/plain"].includes(file.type) && !/\.(doc|docx|txt)$/i.test(file.name)) {
-        toast.error(`${file.name}: formato não permitido.`);
+      const extension = file.name.split(".").pop()?.toLowerCase();
+      const allowed = ["png", "jpg", "jpeg", "webp", "pdf", "doc", "docx", "txt"].includes(extension ?? "");
+      if (!allowed) {
+        toast.error(`${file.name}: formato não permitido. Use PNG, JPG, WEBP, PDF, DOC, DOCX ou TXT.`);
         continue;
       }
       valid.push({
@@ -138,7 +145,7 @@ function AssistantPage() {
         dataUrl: await fileToDataUrl(file),
       })));
       const attachmentNames = selectedFiles.map(({ file }) => file.name);
-      const displayMessage = [msg, attachmentNames.length ? `\\n\\nArquivos enviados: ${attachmentNames.join(", ")}` : ""].join("");
+      const displayMessage = [msg, attachmentNames.length ? `\n\nArquivos enviados: ${attachmentNames.join(", ")}` : ""].join("");
       setMessages((m) => [...m, { id: crypto.randomUUID(), role: "user", content: displayMessage }]);
       const r = await assistantReply({
         data: {
